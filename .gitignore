@@ -1,0 +1,8 @@
+build/
+tinyopt
+gendata
+bench_driver
+tests/run_tests
+benchdata/catalog.json
+docwork/
+*.o
