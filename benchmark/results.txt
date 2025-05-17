@@ -1,0 +1,61 @@
+tinyopt benchmark run
+dataset: ./benchdata
+tables: products(2500) orders(25000) line_items(100000) customers(500) 
+
+=== Q1 (two-table, selective) ===
+SELECT * FROM customers, orders WHERE customers.id = orders.customer_id AND customers.country = 'PK'
+
+config                   est_cost      actual_ms         rows
+no optimization            102542          15.96          464
+rules only                  53125           5.80          464
+DP only                    102542          17.80          464
+full optimizer              53125           6.13          464
+speedup (no-opt vs full, actual time if both ran, else cost ratio): 2.6x
+
+=== Q2 (three-table, selective) ===
+SELECT customers.name, SUM(line_items.qty * line_items.price) FROM customers, orders, line_items WHERE customers.id = orders.customer_id AND orders.id = line_items.order_id AND customers.country = 'PK' AND orders.year = 2024
+
+config                   est_cost      actual_ms         rows
+no optimization            527333         131.26          365
+rules only                 383833          36.46          365
+DP only                    527333         128.48          365
+full optimizer             383833          46.13          365
+speedup (no-opt vs full, actual time if both ran, else cost ratio): 2.8x
+
+=== Q3 (four-table, selective) ===
+SELECT customers.name, products.name FROM customers, orders, line_items, products WHERE customers.id = orders.customer_id AND orders.id = line_items.order_id AND line_items.product_id = products.id AND customers.country = 'PK' AND products.category = 'Electronics'
+
+config                   est_cost      actual_ms         rows
+no optimization            831548         200.95          165
+rules only                 399791          37.28          165
+DP only                    734048         147.14          165
+full optimizer             389942          35.66          165
+speedup (no-opt vs full, actual time if both ran, else cost ratio): 5.6x
+
+=== Q4 (aggregation) ===
+SELECT customers.country, SUM(orders.total) FROM customers, orders WHERE customers.id = orders.customer_id AND orders.year = 2024 GROUP BY customers.country
+
+config                   est_cost      actual_ms         rows
+no optimization            106524          10.90           24
+rules only                  92024           8.83           24
+DP only                    106524          11.15           24
+full optimizer              92024           8.68           24
+speedup (no-opt vs full, actual time if both ran, else cost ratio): 1.3x
+
+=== Q5 (adversarial) ===
+SELECT * FROM products, line_items, orders, customers WHERE products.id = line_items.product_id AND line_items.order_id = orders.id AND orders.customer_id = customers.id AND products.category = 'Electronics' AND customers.country = 'PK'
+
+config                   est_cost      actual_ms         rows
+no optimization           1058548         212.21          165
+rules only                 263071          31.85          165
+DP only                    734048         147.95          165
+full optimizer             261942          31.58          165
+speedup (no-opt vs full, actual time if both ran, else cost ratio): 6.7x
+
+=== summary ===
+Q1 (two-table, selective)      2.6x
+Q2 (three-table, selective)    2.8x
+Q3 (four-table, selective)     5.6x
+Q4 (aggregation)               1.3x
+Q5 (adversarial)               6.7x
+average speedup: 3.8x
