@@ -5,10 +5,29 @@ LDFLAGS  = -lm
 SRC_DIR  = src
 OBJ_DIR  = build
 
-.PHONY: all clean
+CORE_SRCS = $(SRC_DIR)/value.c $(SRC_DIR)/catalog.c $(SRC_DIR)/plan.c \
+            $(SRC_DIR)/parser.c $(SRC_DIR)/bind.c $(SRC_DIR)/rewrite.c \
+            $(SRC_DIR)/cost.c $(SRC_DIR)/joinorder.c $(SRC_DIR)/exec.c
+CORE_OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(CORE_SRCS))
 
-all:
-	@echo "Project initialized"
+HEADERS = $(wildcard include/*.h)
+
+.PHONY: all clean test
+
+all: tinyopt gendata bench_driver
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+tinyopt: $(CORE_OBJS) $(OBJ_DIR)/main.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+gendata: gen/gendata.c
+	$(CC) $(CFLAGS) -o $@ gen/gendata.c $(LDFLAGS)
+
+bench_driver: $(CORE_OBJS) bench/benchmark.c
+	$(CC) $(CFLAGS) -o $@ $(CORE_OBJS) bench/benchmark.c $(LDFLAGS)
 
 clean:
 	rm -rf $(OBJ_DIR) tinyopt gendata bench_driver tests/run_tests benchdata/catalog.json
